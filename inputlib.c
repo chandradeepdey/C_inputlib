@@ -1,3 +1,6 @@
+/* C_inputlib version 1.0
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,95 +9,157 @@
 #include <math.h>
 #include "inputlib.h"
 
-/* gets a string from stdin
+/* gets a string from a given stream
  *
- * return value is fgets with stream set to stdin
+ * Parameters
+ * 1) s is the char array where the string will be stored.
+ * 2) n is the number of characters to be stored, including
+ * the terminating null character
+ * 3) stream is the stream from which input is taken
  *
- * removes any newline character that may
- * occur due to input being smaller than count
+ * Return
+ * NULL pointer if n is less than 2 or s is a NULL pointer
+ * or stream is a NULL pointer
+ * Otherwise returns the same as fgets(s, n, stream)
  *
- * if input is greater than count, clear stdin
- * upto the next line (or EOF, whichever comes first)
+ * Any input after the string until the next newline character
+ * is consumed by this function
  */
-char * get_string(char * s, int count)
+char* get_string(char *restrict s, int n, FILE *restrict stream)
 {
-        char * ret;
-        char * n;
+        if (n < 2 || s == NULL || stream == NULL)
+                return NULL;
 
-        ret = fgets(s, count, stdin);
+        char *ret;
+        char *newline;
+
+        ret = fgets(s, n, stream);
         if (ret) {
-                n = strchr(s, '\n');
-                if (n)
+                newline = strchr(s, '\n');
+                if (newline)
                         /* input ended before string finished, process
                          * newline character
                          */
-                        *n = '\0';
+                        *newline = '\0';
                 else
                         /* input ended after string finished, clear
                          * remaining input
                          */
-                        clear_line();
+                        clear_line(stream);
         }
 
         return ret;
 }
 
-/* clears input upto the next line
+/*
+ * Any input until the next newline character is consumed by this function
+ *
+ * Inputs
+ * 1) stream is the stream on which the operation is to be performed
  */
-void clear_line(void)
+void clear_line(FILE *stream)
 {
-        int ch;
-        while ((ch = getchar()) != '\n' && ch != EOF)
-                ;
+        while (getc(stream) != '\n')
+                if (feof(stream) || ferror(stream))
+                        break;
 }
 
-/* gets an int from stdin by persistently
+/*
+ * buffer used by functions below this point
+ */
+#define STRSIZE 500
+static char input[STRSIZE];
+
+/* gets an int from a stream by persistently
  * nagging the user to enter the right thing
  *
- * returns 0 if EOF is reached
+ * Return
+ * Returns an int. If stream is null, EOF is reached,
+ * or a read error occurs, 0 is returned.
+ *
+ * Any input after the int until the next newline character
+ * is consumed by this function
  */
-int get_int(void)
+int get_int(FILE *stream)
 {
         long ret;
-        char * status;
-        char * endptr;
-        const size_t STRSIZE = 81;
-        char input[STRSIZE];
+        char *status;
+        char *endptr;
 
-        while ((status = get_string(input, STRSIZE)) != NULL) {
+        while ((status = get_string(input, STRSIZE, stream)) != NULL) {
                 ret = strtol(input, &endptr, 0);
                 if (input == endptr) {
                         fputs("Invalid input\n", stderr);
                         continue;
                 } else if (ret > INT_MAX || ret < INT_MIN) {
-                        fputs("Out of range\n", stderr);
+                        /* manually do this because strtol won't set it
+                         * unless input was > LONG_MAX or < LONG_MIN
+                         */
+                        fprintf(stderr, "%s\n", strerror(ERANGE))
                         errno = 0;
                         continue;
                 } else
                         break;
         }
         if (status == NULL) {
-                fputs("EOF reached or read error occurred.\n", stderr);
                 ret = 0;
         }
 
         return (int) ret;
 }
 
-/* gets a double from stdin by persistently
+/* gets a long from a stream by persistently
  * nagging the user to enter the right thing
  *
- * returns 0 if EOF is reached
+ * Return
+ * Returns a long. If stream is null, EOF is reached,
+ * or a read error occurs, 0 is returned.
+ *
+ * Any input after the long until the next newline character
+ * is consumed by this function
  */
-double get_double(void)
+long get_long(FILE *stream)
+{
+        long ret;
+        char *status;
+        char *endptr;
+
+        while ((status = get_string(input, STRSIZE, stream)) != NULL) {
+                ret = strtol(input, &endptr, 0);
+                if (input == endptr) {
+                        fputs("Invalid input\n", stderr);
+                        continue;
+                } else if (errno == ERANGE) {
+                        fprintf(stderr, "%s\n", strerror(errno))
+                        errno = 0;
+                        continue;
+                } else
+                        break;
+        }
+        if (status == NULL) {
+                ret = 0;
+        }
+
+        return ret;
+}
+
+/* gets an double from a stream by persistently
+ * nagging the user to enter the right thing
+ *
+ * Return
+ * Returns a double. If stream is null, EOF is reached,
+ * or a read error occurs, 0 is returned.
+ *
+ * Any input after the double until the next newline character
+ * is consumed by this function
+ */
+double get_double(FILE *stream)
 {
         double ret;
-        char * status;
-        char * endptr;
-        const size_t STRSIZE = 500;
-        char input[STRSIZE];
+        char *status;
+        char *endptr;
 
-        while ((status = get_string(input, STRSIZE)) != NULL) {
+        while ((status = get_string(input, STRSIZE, stream)) != NULL) {
                 ret = strtod(input, &endptr);
                 if (input == endptr) {
                         fputs("Invalid input\n", stderr);
@@ -107,7 +172,6 @@ double get_double(void)
                         break;
         }
         if (status == NULL) {
-                fputs("EOF reached or read error occurred.\n", stderr);
                 ret = 0;
         }
 
