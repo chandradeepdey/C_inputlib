@@ -1,4 +1,4 @@
-/* C_inputlib version 1.0
+/* C_inputlib version 2.0
  */
 
 #include <stdio.h>
@@ -15,11 +15,11 @@
  * 1) s is the char array where the string will be stored.
  * 2) n is the number of characters to be stored, including
  * the terminating null character
- * 3) stream is the stream from which input is taken
+ * 3) stream is the stream from which input is taken. if stream
+ * is NULL, stdin is used.
  *
  * Return
  * NULL pointer if n is less than 2 or s is a NULL pointer
- * or stream is a NULL pointer
  * Otherwise returns the same as fgets(s, n, stream)
  *
  * Any input after the string until the next newline character
@@ -27,8 +27,10 @@
  */
 char* get_string(char *restrict s, int n, FILE *restrict stream)
 {
-        if (n < 2 || s == NULL || stream == NULL)
+        if (n < 2 || s == NULL)
                 return NULL;
+        if (stream == NULL)
+                stream = stdin;
 
         char *ret;
         char *newline;
@@ -55,10 +57,14 @@ char* get_string(char *restrict s, int n, FILE *restrict stream)
  * Any input until the next newline character is consumed by this function
  *
  * Inputs
- * 1) stream is the stream on which the operation is to be performed
+ * 1) stream is the stream on which the operation is to be performed. stdin
+ * is used if stream is NULL
  */
 void clear_line(FILE *stream)
 {
+        if (stream == NULL)
+                stream = stdin;
+
         while (getc(stream) != '\n')
                 if (feof(stream) || ferror(stream))
                         break;
@@ -73,9 +79,13 @@ static char input[STRSIZE];
 /* gets an int from a stream by persistently
  * nagging the user to enter the right thing
  *
+ * Input
+ * 1) stream is the stream from which input is to be taken.
+ * stdin is used if stream is NULL
+ *
  * Return
- * Returns an int. If stream is null, EOF is reached,
- * or a read error occurs, 0 is returned.
+ * Returns an int. 0 is returned in case of a read error
+ * or EOF
  *
  * Any input after the int until the next newline character
  * is consumed by this function
@@ -111,9 +121,13 @@ int get_int(FILE *stream)
 /* gets a long from a stream by persistently
  * nagging the user to enter the right thing
  *
+ * Input
+ * 1) stream is the stream from which input is to be taken.
+ * stdin is used if stream is NULL
+ *
  * Return
- * Returns a long. If stream is null, EOF is reached,
- * or a read error occurs, 0 is returned.
+ * Returns a long. 0 is returned in case of a read error
+ * or EOF
  *
  * Any input after the long until the next newline character
  * is consumed by this function
@@ -146,9 +160,13 @@ long get_long(FILE *stream)
 /* gets an double from a stream by persistently
  * nagging the user to enter the right thing
  *
+ * Input
+ * 1) stream is the stream from which input is to be taken.
+ * stdin is used if stream is NULL
+ *
  * Return
- * Returns a double. If stream is null, EOF is reached,
- * or a read error occurs, 0 is returned.
+ * Returns a double. 0 is returned in case of a read error
+ * or EOF
  *
  * Any input after the double until the next newline character
  * is consumed by this function
