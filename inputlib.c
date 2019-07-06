@@ -19,15 +19,16 @@
  * is NULL, stdin is used.
  *
  * Return
- * NULL pointer if n is less than 2 or s is a NULL pointer
+ * NULL pointer if n is less than 1 or s is a NULL pointer
  * Otherwise returns the same as fgets(s, n, stream)
  *
  * Any input after the string until the next newline character
  * is consumed by this function
+ * Behaviour is undefined if s cannot storeZn elements
  */
 char* get_string(char *restrict s, int n, FILE *restrict stream)
 {
-        if (n < 2 || s == NULL)
+        if (n < 1 || s == NULL)
                 return NULL;
         if (stream == NULL)
                 stream = stdin;
