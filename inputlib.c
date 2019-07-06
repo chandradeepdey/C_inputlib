@@ -24,7 +24,7 @@
  *
  * Any input after the string until the next newline character
  * is consumed by this function
- * Behaviour is undefined if s cannot storeZn elements
+ * Behaviour is undefined if s cannot store n elements
  */
 char* get_string(char *restrict s, int n, FILE *restrict stream)
 {
