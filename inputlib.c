@@ -65,9 +65,9 @@ void clear_line(FILE *stream)
         if (stream == NULL)
                 stream = stdin;
 
-        while (getc(stream) != '\n')
-                if (feof(stream) || ferror(stream))
-                        break;
+        int ch;
+        while ((ch = getc(stream)) != '\n' && ch != EOF)
+                ;
 }
 
 /*
