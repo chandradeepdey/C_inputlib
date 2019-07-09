@@ -6,7 +6,6 @@
 #include <string.h>
 #include <errno.h>
 #include <limits.h>
-#include <math.h>
 #include "inputlib.h"
 
 /* gets a string from a given stream
@@ -106,7 +105,7 @@ int get_int(FILE *stream)
                         /* manually do this because strtol won't set it
                          * unless input was > LONG_MAX or < LONG_MIN
                          */
-                        fprintf(stderr, "%s\n", strerror(ERANGE))
+                        fprintf(stderr, "%s\n", strerror(ERANGE));
                         errno = 0;
                         continue;
                 } else
@@ -145,7 +144,7 @@ long get_long(FILE *stream)
                         fputs("Invalid input\n", stderr);
                         continue;
                 } else if (errno == ERANGE) {
-                        fprintf(stderr, "%s\n", strerror(errno))
+                        fprintf(stderr, "%s\n", strerror(errno));
                         errno = 0;
                         continue;
                 } else
@@ -183,8 +182,8 @@ double get_double(FILE *stream)
                 if (input == endptr) {
                         fputs("Invalid input\n", stderr);
                         continue;
-                } else if (ret == HUGE_VAL || ret == -HUGE_VAL) {
-                        fputs("Out of range\n", stderr);
+                } else if (errno == ERANGE) {
+                        fprintf(stderr, "%s\n", strerror(errno));
                         errno = 0;
                         continue;
                 } else
