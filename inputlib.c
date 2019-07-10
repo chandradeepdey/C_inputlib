@@ -157,7 +157,7 @@ long get_long(FILE *stream)
         return ret;
 }
 
-/* gets an double from a stream by persistently
+/* gets a double from a stream by persistently
  * nagging the user to enter the right thing
  *
  * Input
