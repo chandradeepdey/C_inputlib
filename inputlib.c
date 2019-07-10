@@ -157,6 +157,48 @@ long get_long(FILE *stream)
         return ret;
 }
 
+/* gets an unsigned int from a stream by persistently
+ * nagging the user to enter the right thing
+ *
+ * Input
+ * 1) stream is the stream from which input is to be taken.
+ * stdin is used if stream is NULL
+ *
+ * Return
+ * Returns an unsigned int. 0 is returned in case of a read error
+ * or EOF
+ *
+ * Any input after the unsigned int until the next newline character
+ * is consumed by this function
+ */
+unsigned int get_unsigned(FILE *stream)
+{
+        unsigned long ret;
+        char *status;
+        char *endptr;
+
+        while ((status = get_string(input, STRSIZE, stream)) != NULL) {
+                ret = strtoul(input, &endptr, 0);
+                if (input == endptr) {
+                        fputs("Invalid input\n", stderr);
+                        continue;
+                } else if (ret > UINT_MAX || errno == ERANGE) {
+                        /* manually do this because strtoul might not
+                         * set errno unless input was > ULONG_MAX
+                         */
+                        fprintf(stderr, "%s\n", strerror(ERANGE));
+                        errno = 0;
+                        continue;
+                } else
+                        break;
+        }
+        if (status == NULL) {
+                ret = 0;
+        }
+
+        return (unsigned int) ret;
+}
+
 /* gets a double from a stream by persistently
  * nagging the user to enter the right thing
  *
