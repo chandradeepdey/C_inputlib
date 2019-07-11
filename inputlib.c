@@ -25,7 +25,7 @@
  * is consumed by this function
  * Behaviour is undefined if s cannot store n elements
  */
-char* get_string(char *restrict s, int n, FILE *restrict stream)
+char* get_string(char *s, int n, FILE *stream)
 {
         if (n < 1 || s == NULL)
                 return NULL;
