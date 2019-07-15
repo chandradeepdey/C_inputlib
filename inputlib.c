@@ -41,6 +41,7 @@ char* get_dynstring(FILE *stream)
                                 if (temp != NULL) {
                                         size *= 2;
                                         ret = temp;
+                                        temp = NULL;
                                 } else {
                                         free(ret);
                                         ret = NULL;
