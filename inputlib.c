@@ -77,15 +77,13 @@ int get_int(FILE *stream)
         if (stream == NULL)
                 stream = stdin;
 
-        long ret;
+        long ret = 0;
         char *input;
         char *endptr;
 
         int valid = 0;
         while (valid == 0 && feof(stream) == 0 && ferror(stream) == 0) {
-                if ((input = get_dynstring(stream)) == NULL)
-                        ret = 0;
-                else {
+                if ((input = get_dynstring(stream)) != NULL) {
                         ret = strtol(input, &endptr, 0);
                         if (input == endptr)
                                 fputs("Invalid input\n", stderr);
@@ -123,15 +121,13 @@ long get_long(FILE *stream)
         if (stream == NULL)
                 stream = stdin;
 
-        long ret;
+        long ret = 0;
         char *input;
         char *endptr;
 
         int valid = 0;
         while (valid == 0 && feof(stream) == 0 && ferror(stream) == 0) {
-                if ((input = get_dynstring(stream)) == NULL) {
-                        ret = 0;
-                } else {
+                if ((input = get_dynstring(stream)) != NULL) {
                         ret = strtol(input, &endptr, 0);
                         if (input == endptr)
                                 fputs("Invalid input\n", stderr);
@@ -166,15 +162,13 @@ unsigned int get_unsigned(FILE *stream)
         if (stream == NULL)
                 stream = stdin;
 
-        unsigned long ret;
+        unsigned long ret = 0;
         char *input;
         char *endptr;
 
         int valid = 0;
         while (valid == 0 && feof(stream) == 0 && ferror(stream) == 0) {
-                if ((input = get_dynstring(stream)) == NULL)
-                        ret = 0;
-                else {
+                if ((input = get_dynstring(stream)) != NULL) {
                         ret = strtoul(input, &endptr, 0);
                         if (input == endptr)
                                 fputs("Invalid input\n", stderr);
@@ -212,15 +206,13 @@ double get_double(FILE *stream)
         if (stream == NULL)
                 stream = stdin;
 
-        double ret;
+        double ret = 0;
         char *input;
         char *endptr;
 
         int valid = 0;
         while (valid == 0 && feof(stream) == 0 && ferror(stream) == 0) {
-                if ((input = get_dynstring(stream)) == NULL)
-                        ret = 0;
-                else {
+                if ((input = get_dynstring(stream)) != NULL) {
                         ret = strtod(input, &endptr);
                         if (input == endptr)
                                 fputs("Invalid input\n", stderr);
