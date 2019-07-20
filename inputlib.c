@@ -85,16 +85,17 @@ int get_int(FILE *stream)
         int valid = 0;
         while (valid == 0 && feof(stream) == 0 && ferror(stream) == 0) {
                 if ((input = get_dynstring(stream)) != NULL) {
+                        errno = 0;
                         ret = strtol(input, &endptr, 0);
                         if (input == endptr)
                                 fputs("Invalid input\n", stderr);
-                        else if (ret > INT_MAX || ret < INT_MIN) {
+                        else if (errno == ERANGE || ret > INT_MAX
+                                        || ret < INT_MIN)
                                 /* manually do this because strtol won't set it
                                  * unless input was > LONG_MAX or < LONG_MIN
                                  */
                                 fprintf(stderr, "%s\n", strerror(ERANGE));
-                                errno = 0;
-                        } else
+                        else
                                 valid = 1;
                         free(input);
                 }
@@ -129,13 +130,13 @@ long get_long(FILE *stream)
         int valid = 0;
         while (valid == 0 && feof(stream) == 0 && ferror(stream) == 0) {
                 if ((input = get_dynstring(stream)) != NULL) {
+                        errno = 0;
                         ret = strtol(input, &endptr, 0);
                         if (input == endptr)
                                 fputs("Invalid input\n", stderr);
-                        else if (errno == ERANGE) {
+                        else if (errno == ERANGE)
                                 fprintf(stderr, "%s\n", strerror(errno));
-                                errno = 0;
-                        } else
+                        else
                                 valid = 1;
                         free(input);
                 }
@@ -167,19 +168,24 @@ unsigned int get_unsigned(FILE *stream)
         char *input;
         char *endptr;
 
+        char *checksign;
+
         int valid = 0;
         while (valid == 0 && feof(stream) == 0 && ferror(stream) == 0) {
                 if ((input = get_dynstring(stream)) != NULL) {
+                        checksign = strchr(input, '-');
+                        errno = 0;
                         ret = strtoul(input, &endptr, 0);
-                        if (input == endptr)
+                        if (input == endptr
+                                        || (checksign != NULL
+                                                        && checksign < endptr))
                                 fputs("Invalid input\n", stderr);
-                        else if (ret > UINT_MAX || errno == ERANGE) {
+                        else if (errno == ERANGE || ret > UINT_MAX)
                                 /* manually do this because strtoul might not
                                  * set errno unless input was > ULONG_MAX
                                  */
                                 fprintf(stderr, "%s\n", strerror(ERANGE));
-                                errno = 0;
-                        } else
+                        else
                                 valid = 1;
                         free(input);
                 }
@@ -214,13 +220,13 @@ double get_double(FILE *stream)
         int valid = 0;
         while (valid == 0 && feof(stream) == 0 && ferror(stream) == 0) {
                 if ((input = get_dynstring(stream)) != NULL) {
+                        errno = 0;
                         ret = strtod(input, &endptr);
                         if (input == endptr)
                                 fputs("Invalid input\n", stderr);
-                        else if (errno == ERANGE) {
+                        else if (errno == ERANGE)
                                 fprintf(stderr, "%s\n", strerror(errno));
-                                errno = 0;
-                        } else
+                        else
                                 valid = 1;
                         free(input);
                 }
