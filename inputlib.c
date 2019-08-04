@@ -104,7 +104,7 @@ int get_int(FILE *stream)
         return (int) ret;
 }
 
-/* gets a long from a stream by persistently
+/* gets a long int from a stream by persistently
  * nagging the user to enter the right thing
  *
  * Input
@@ -112,13 +112,13 @@ int get_int(FILE *stream)
  * stdin is used if stream is NULL
  *
  * Return
- * Returns a long. 0 is returned in case of a read error
+ * Returns a long int. 0 is returned in case of a read error
  * or EOF
  *
- * Any input after the long until the next newline character
+ * Any input after the long int until the next newline character
  * is consumed by this function
  */
-long get_long(FILE *stream)
+long int get_long(FILE *stream)
 {
         if (stream == NULL)
                 stream = stdin;
@@ -192,6 +192,52 @@ unsigned int get_unsigned(FILE *stream)
         }
 
         return (unsigned int) ret;
+}
+
+/* gets an unsigned long long int from a stream by persistently
+ * nagging the user to enter the right thing
+ *
+ * Input
+ * 1) stream is the stream from which input is to be taken.
+ * stdin is used if stream is NULL
+ *
+ * Return
+ * Returns an unsigned long long int. 0 is returned in case of a read error
+ * or EOF
+ *
+ * Any input after the unsigned int until the next newline character
+ * is consumed by this function
+ */
+unsigned long long int get_unsigned_long_long(FILE *stream)
+{
+        if (stream == NULL)
+                stream = stdin;
+
+        unsigned long long int ret = 0;
+        char *input;
+        char *endptr;
+
+        char *checksign;
+
+        int valid = 0;
+        while (valid == 0 && feof(stream) == 0 && ferror(stream) == 0) {
+                if ((input = get_dynstring(stream)) != NULL) {
+                        checksign = strchr(input, '-');
+                        errno = 0;
+                        ret = strtoull(input, &endptr, 0);
+                        if (input == endptr
+                                        || (checksign != NULL
+                                                        && checksign < endptr))
+                                fputs("Invalid input\n", stderr);
+                        else if (errno == ERANGE)
+                                fprintf(stderr, "%s\n", strerror(ERANGE));
+                        else
+                                valid = 1;
+                        free(input);
+                }
+        }
+
+        return ret;
 }
 
 /* gets a double from a stream by persistently
