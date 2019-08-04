@@ -7,7 +7,6 @@
 #include <errno.h>
 #include <stdint.h>
 #include <limits.h>
-#define INIT_SIZE 10
 #include "inputlib.h"
 
 /* gets a string upto the next newline from a given stream
@@ -28,7 +27,7 @@ char* get_dynstring(FILE *stream)
                 stream = stdin;
 
         char *ret, *temp = NULL;
-        size_t size = INIT_SIZE;
+        size_t size = 1;
         ret = malloc(size);
 
         if (ret != NULL) {
