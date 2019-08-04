@@ -1,4 +1,4 @@
-/* C_inputlib version 7.0
+/* C_inputlib version 7.1
  */
 
 #include <stdio.h>
