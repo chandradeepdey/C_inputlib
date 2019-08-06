@@ -47,10 +47,9 @@
  * Notes
  * *lineptr must be freed using free() to avoid memory leaks.
  *
- * in the event that an attempt to grow *lineptr fails, any characters that
- * were not stored into the current *lineptr are left on the stream. Otherwise
  * the function consumes all input till the first newline character that
- * appears. The newline character is discarded and not stored in the storage
+ * appears. This is true even if there isn't enough space to store all the
+ * characters. The newline character is discarded and not stored in the storage
  * area pointed to by *lineptr.
  *
  * the strings formed by this function are always null terminated. However,
@@ -78,6 +77,7 @@ size_t cust_getline(char **lineptr, size_t *n, FILE *stream)
         }
 
         size_t i = 0;
+        _Bool clear_line = 0;
         int ch;
         while ((ch = getc(stream)), ch != '\n' && ch != EOF) {
                 if (i == *n - 1) {
@@ -87,11 +87,11 @@ size_t cust_getline(char **lineptr, size_t *n, FILE *stream)
                                         *n *= 2;
                                         *lineptr = temp;
                                 } else {
-                                        ungetc(ch, stream);
+                                        clear_line = 1;
                                         break;
                                 }
                         } else {
-                                ungetc(ch, stream);
+                                clear_line = 1;
                                 break;
                         }
                 }
@@ -99,56 +99,12 @@ size_t cust_getline(char **lineptr, size_t *n, FILE *stream)
         }
         (*lineptr)[i++] = '\0';
 
-        return i;
-}
-
-/* gets a string upto the next newline from a given stream
- *
- * Parameters
- * 1) stream is the stream from which input is taken. if stream
- * is NULL, stdin is used.
- *
- * Return
- * a pointer to the new string. In case there are errors allocating
- * memory, NULL pointer is returned.
- * If the return value is not NULL, it should be freed using free()
- * before exiting the program.
- */
-char* get_dynstring(FILE *stream)
-{
-        if (stream == NULL)
-                stream = stdin;
-
-        char *ret, *temp = NULL;
-        size_t size = 1;
-        ret = malloc(size);
-
-        if (ret != NULL) {
-                int ch;
-                size_t i = 0;
-                while ((ch = getc(stream)), ch != '\n' && ch != EOF) {
-                        if (i == size - 1) {
-                                if (size <= SIZE_MAX / 2)
-                                        temp = realloc(ret, size * 2);
-                                if (temp != NULL) {
-                                        size *= 2;
-                                        ret = temp;
-                                        temp = NULL;
-                                } else {
-                                        free(ret);
-                                        ret = NULL;
-                                }
-                        }
-                        if (ret == NULL)
-                                break;
-                        ret[i] = ch;
-                        i++;
-                }
-                if (ret != NULL)
-                        ret[i] = '\0';
+        if (clear_line) {
+                while ((ch = getc(stream)), ch != '\n' && ch != EOF)
+                        continue;
         }
 
-        return ret;
+        return i;
 }
 
 /* gets an int from a stream by persistently
@@ -171,27 +127,24 @@ int get_int(FILE *stream)
                 stream = stdin;
 
         long ret = 0;
-        char *input;
-        char *endptr;
 
-        int valid = 0;
-        while (valid == 0 && feof(stream) == 0 && ferror(stream) == 0) {
-                if ((input = get_dynstring(stream)) != NULL) {
-                        errno = 0;
-                        ret = strtol(input, &endptr, 0);
-                        if (input == endptr)
-                                fputs("Invalid input\n", stderr);
-                        else if (errno == ERANGE || ret > INT_MAX
-                                        || ret < INT_MIN)
-                                /* manually do this because strtol won't set it
-                                 * unless input was > LONG_MAX or < LONG_MIN
-                                 */
-                                fprintf(stderr, "%s\n", strerror(ERANGE));
-                        else
-                                valid = 1;
-                        free(input);
-                }
+        char *input = NULL;
+        size_t n = 0;
+        while (cust_getline(&input, &n, stream) != 0) {
+                char *endptr = NULL;
+                errno = 0;
+                ret = strtol(input, &endptr, 0);
+                if (input == endptr)
+                        fputs("Invalid input\n", stderr);
+                else if (errno == ERANGE || ret > INT_MAX || ret < INT_MIN)
+                        /* manually do this because strtol won't set it
+                         * unless input was > LONG_MAX or < LONG_MIN
+                         */
+                        fprintf(stderr, "%s\n", strerror(ERANGE));
+                else
+                        break;
         }
+        free(input);
 
         return (int) ret;
 }
@@ -216,23 +169,21 @@ long int get_long(FILE *stream)
                 stream = stdin;
 
         long ret = 0;
-        char *input;
-        char *endptr;
 
-        int valid = 0;
-        while (valid == 0 && feof(stream) == 0 && ferror(stream) == 0) {
-                if ((input = get_dynstring(stream)) != NULL) {
-                        errno = 0;
-                        ret = strtol(input, &endptr, 0);
-                        if (input == endptr)
-                                fputs("Invalid input\n", stderr);
-                        else if (errno == ERANGE)
-                                fprintf(stderr, "%s\n", strerror(errno));
-                        else
-                                valid = 1;
-                        free(input);
-                }
+        char *input = NULL;
+        size_t n = 0;
+        while (cust_getline(&input, &n, stream) != 0) {
+                char *endptr = NULL;
+                errno = 0;
+                ret = strtol(input, &endptr, 0);
+                if (input == endptr)
+                        fputs("Invalid input\n", stderr);
+                else if (errno == ERANGE)
+                        fprintf(stderr, "%s\n", strerror(errno));
+                else
+                        break;
         }
+        free(input);
 
         return ret;
 }
@@ -257,31 +208,26 @@ unsigned int get_unsigned(FILE *stream)
                 stream = stdin;
 
         unsigned long ret = 0;
-        char *input;
-        char *endptr;
 
-        char *checksign;
-
-        int valid = 0;
-        while (valid == 0 && feof(stream) == 0 && ferror(stream) == 0) {
-                if ((input = get_dynstring(stream)) != NULL) {
-                        checksign = strchr(input, '-');
-                        errno = 0;
-                        ret = strtoul(input, &endptr, 0);
-                        if (input == endptr
-                                        || (checksign != NULL
-                                                        && checksign < endptr))
-                                fputs("Invalid input\n", stderr);
-                        else if (errno == ERANGE || ret > UINT_MAX)
-                                /* manually do this because strtoul might not
-                                 * set errno unless input was > ULONG_MAX
-                                 */
-                                fprintf(stderr, "%s\n", strerror(ERANGE));
-                        else
-                                valid = 1;
-                        free(input);
-                }
+        char *input = NULL;
+        size_t n = 0;
+        while (cust_getline(&input, &n, stream) != 0) {
+                char *checksign = strchr(input, '-');
+                char *endptr = NULL;
+                errno = 0;
+                ret = strtoul(input, &endptr, 0);
+                if (input == endptr
+                                || (checksign != NULL && checksign < endptr))
+                        fputs("Invalid input\n", stderr);
+                else if (errno == ERANGE || ret > UINT_MAX)
+                        /* manually do this because strtoul might not
+                         * set errno unless input was > ULONG_MAX
+                         */
+                        fprintf(stderr, "%s\n", strerror(ERANGE));
+                else
+                        break;
         }
+        free(input);
 
         return (unsigned int) ret;
 }
@@ -306,28 +252,23 @@ unsigned long long int get_unsigned_long_long(FILE *stream)
                 stream = stdin;
 
         unsigned long long int ret = 0;
-        char *input;
-        char *endptr;
 
-        char *checksign;
-
-        int valid = 0;
-        while (valid == 0 && feof(stream) == 0 && ferror(stream) == 0) {
-                if ((input = get_dynstring(stream)) != NULL) {
-                        checksign = strchr(input, '-');
-                        errno = 0;
-                        ret = strtoull(input, &endptr, 0);
-                        if (input == endptr
-                                        || (checksign != NULL
-                                                        && checksign < endptr))
-                                fputs("Invalid input\n", stderr);
-                        else if (errno == ERANGE)
-                                fprintf(stderr, "%s\n", strerror(ERANGE));
-                        else
-                                valid = 1;
-                        free(input);
-                }
+        char *input = NULL;
+        size_t n = 0;
+        while (cust_getline(&input, &n, stream) != 0) {
+                char *checksign = strchr(input, '-');
+                char *endptr = NULL;
+                errno = 0;
+                ret = strtoull(input, &endptr, 0);
+                if (input == endptr
+                                || (checksign != NULL && checksign < endptr))
+                        fputs("Invalid input\n", stderr);
+                else if (errno == ERANGE)
+                        fprintf(stderr, "%s\n", strerror(ERANGE));
+                else
+                        break;
         }
+        free(input);
 
         return ret;
 }
@@ -352,23 +293,21 @@ double get_double(FILE *stream)
                 stream = stdin;
 
         double ret = 0;
-        char *input;
-        char *endptr;
 
-        int valid = 0;
-        while (valid == 0 && feof(stream) == 0 && ferror(stream) == 0) {
-                if ((input = get_dynstring(stream)) != NULL) {
-                        errno = 0;
-                        ret = strtod(input, &endptr);
-                        if (input == endptr)
-                                fputs("Invalid input\n", stderr);
-                        else if (errno == ERANGE)
-                                fprintf(stderr, "%s\n", strerror(errno));
-                        else
-                                valid = 1;
-                        free(input);
-                }
+        char *input = NULL;
+        size_t n = 0;
+        while (cust_getline(&input, &n, stream)) {
+                char *endptr = NULL;
+                errno = 0;
+                ret = strtod(input, &endptr);
+                if (input == endptr)
+                        fputs("Invalid input\n", stderr);
+                else if (errno == ERANGE)
+                        fprintf(stderr, "%s\n", strerror(errno));
+                else
+                        break;
         }
+        free(input);
 
         return ret;
 }
