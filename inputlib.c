@@ -34,7 +34,7 @@
  *   2) n was NULL
  *   3) EOF or read error occurred before the function was able to scan
  *      anything useful.
- *   3) *lineptr was NULL and the function failed to initially allocate
+ *   4) *lineptr was NULL and the function failed to initially allocate
  *      an one byte storage for the empty string.
  * nonzero
  *   the return value is the number of bytes among the *n bytes that were
