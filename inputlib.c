@@ -94,7 +94,6 @@ size_t cust_getline(char **lineptr, size_t *n, FILE *stream)
         }
 
         size_t i = 0;
-        _Bool clear_line = 0;
         while (ch != '\n' && ch != EOF) {
                 if (i == *n - 1) {
                         if (*n <= SIZE_MAX / 2) {
@@ -102,24 +101,21 @@ size_t cust_getline(char **lineptr, size_t *n, FILE *stream)
                                 if (temp != NULL) {
                                         *n *= 2;
                                         *lineptr = temp;
-                                } else {
-                                        clear_line = 1;
+                                } else
                                         break;
-                                }
-                        } else {
-                                clear_line = 1;
+                        } else
                                 break;
-                        }
                 }
                 (*lineptr)[i++] = ch;
                 ch = getc(stream);
         }
         (*lineptr)[i++] = '\0';
 
-        if (clear_line) {
-                while (ch != '\n' && ch != EOF)
-                        ch = getc(stream);
-        }
+        /* if ch is not the newline character, consume input until
+         * newline occurs
+         */
+        while (ch != '\n' && ch != EOF)
+                ch = getc(stream);
 
         return i;
 }
