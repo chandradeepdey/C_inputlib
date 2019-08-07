@@ -77,7 +77,7 @@ size_t cust_getline(char **lineptr, size_t *n, FILE *stream)
         if (stream == NULL)
                 stream = stdin;
 
-        /* do this instead of (feof(stdin) || ferror(stdin))
+        /* do this instead of (feof(stream) || ferror(stream))
          * because it is possible that eof or error indicator has
          * not yet been set, but the next read attempt would set it
          */
