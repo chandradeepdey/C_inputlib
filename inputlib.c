@@ -9,37 +9,33 @@
 #include <limits.h>
 #include "inputlib.h"
 
-/* an implementation of the POSIX getline() function.
- * this implementation is cross platform, but it is certainly slower than
- * a built-in library function. If you have such a function available, then you
- * should avoid using this.
- * further, this function does not follow the specs of POSIX. In particular,
- * it does not set errno to anything, and it does not use an ssize_t type as
- * its return value.
+/* an implementation of the POSIX getline() function. read below
+ * for differences in specs.
  *
  * Inputs
  * 1) *lineptr must point to an area allocated using the malloc()
- *    family of functions, or it must be NULL. if *lineptr is NULL
- *    the function starts by allocating its own memory and storing
+ *    family of functions, or it must be NULL. if *lineptr is NULL,
+ *    then the function starts by allocating its own memory and storing
  *    the address in *lineptr. Otherwise, the area pointed to by
  *    *lineptr is used by the function, growing it using realloc()
- *    as required. this can also change the value of *lineptr.
- * 2) n is a pointer to the size of the area associated with *lineptr.
- *    if *lineptr was not NULL, incorrect value of *n is undefined behaviour.
- *    *n is modified by the function as lineptr is grown.
- * 3) stream should be an input stream or an update stream or a NULL pointer.
- *    if it is a NULL pointer, the input is automatically taken from stdin.
- *    Otherwise, stream is the stream from which input is to be taken.
+ *    as required.
+ * 2) *n is the size of the area associated with *lineptr. The initial
+ *    value inside *n doesn't matter if *lineptr is set to NULL.
+ * 3) stream should be an input stream or an update stream or a NULL
+ *    pointer. if it is a NULL pointer, the input is automatically taken
+ *    from stdin. Otherwise, stream is the stream from which input is to
+ *    be taken.
  *
- * Returns
- * 0
+ * Return value
+ * zero
  *  in this case *lineptr and *n are left unmodified.
  *  this occurs if
  *   1) lineptr was NULL
  *   2) n was NULL
+ *   3) EOF or read error occurred before the function was able to scan
+ *      anything useful.
  *   3) *lineptr was NULL and the function failed to initially allocate
  *      an one byte storage for the empty string.
- *
  * nonzero
  *   the return value is the number of bytes among the *n bytes that were
  *   stored into by this function.
@@ -47,17 +43,32 @@
  * Notes
  * *lineptr must be freed using free() to avoid memory leaks.
  *
- * the function consumes all input till the first newline character that
- * appears. This is true even if there isn't enough space to store all the
- * characters. The newline character is discarded and not stored in the storage
- * area pointed to by *lineptr.
+ * special notes when *lineptr is not NULL
+ * 1) the function will use the storage area pointed to by *lineptr.
+ *    Since the function grows the area using realloc(), the value of
+ *    *lineptr might change, causing the previous value to become invalid.
+ *    an attempt to access the storage pointed to by the previous *lineptr
+ *    is undefined behaviour. in case a copy of the previous pointer was
+ *    made, it must be updated after a call to this function.
+ * 2) providing an incorrect size in *n is undefined behaviour
+ *
+ * this implementation is cross platform, but it is certainly slower than
+ * a built-in library function. If you have such a function available, then
+ * you should avoid using this.
+ *
+ * further, this function does not follow the specs of POSIX. In particular,
+ * it does not set errno to anything, and it does not use an ssize_t type
+ * as its return value. the function consumes all input till the first newline
+ * character that appears. This is true even if there isn't enough space to
+ * store all the characters. The newline character is discarded and not stored
+ * in the storage area pointed to by *lineptr.
  *
  * the strings formed by this function are always null terminated. However,
  * the standard library functions may fail to operate properly if the input
  * itself somehow contained a null character.
  * A test for this case can be written as
- * strlen(*lineptr) == one less than the return value of this function, given
- * it was nonzero.
+ * strlen(*lineptr) == one less than the return value of this function,
+ * given it was nonzero.
  */
 size_t cust_getline(char **lineptr, size_t *n, FILE *stream)
 {
@@ -65,7 +76,13 @@ size_t cust_getline(char **lineptr, size_t *n, FILE *stream)
                 return 0;
         if (stream == NULL)
                 stream = stdin;
-        if (feof(stream) || ferror(stream))
+
+        /* do this instead of (feof(stdin) || ferror(stdin))
+         * because it is possible that eof or error indicator has
+         * not yet been set, but the next read attempt would set it
+         */
+        int ch = getc(stream);
+        if (ch == EOF)
                 return 0;
 
         if (*lineptr == NULL) {
@@ -78,8 +95,7 @@ size_t cust_getline(char **lineptr, size_t *n, FILE *stream)
 
         size_t i = 0;
         _Bool clear_line = 0;
-        int ch;
-        while ((ch = getc(stream)), ch != '\n' && ch != EOF) {
+        while (ch != '\n' && ch != EOF) {
                 if (i == *n - 1) {
                         if (*n <= SIZE_MAX / 2) {
                                 char *temp = realloc(*lineptr, *n * 2);
@@ -96,12 +112,13 @@ size_t cust_getline(char **lineptr, size_t *n, FILE *stream)
                         }
                 }
                 (*lineptr)[i++] = ch;
+                ch = getc(stream);
         }
         (*lineptr)[i++] = '\0';
 
         if (clear_line) {
-                while ((ch = getc(stream)), ch != '\n' && ch != EOF)
-                        continue;
+                while (ch != '\n' && ch != EOF)
+                        ch = getc(stream);
         }
 
         return i;
