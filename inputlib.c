@@ -89,8 +89,10 @@ size_t cust_getline(char **lineptr, size_t *n, FILE *stream)
                 *lineptr = malloc(1);
                 if (*lineptr)
                         *n = 1;
-                else
+                else {
+                        ungetc(ch, stream);
                         return 0;
+                }
         }
 
         size_t i = 0;
@@ -277,7 +279,7 @@ unsigned long long int get_unsigned_long_long(FILE *stream)
                                 || (checksign != NULL && checksign < endptr))
                         fputs("Invalid input\n", stderr);
                 else if (errno == ERANGE)
-                        fprintf(stderr, "%s\n", strerror(ERANGE));
+                        fprintf(stderr, "%s\n", strerror(errno));
                 else
                         break;
         }
