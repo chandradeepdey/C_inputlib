@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 project("C_inputlib"
-        VERSION 8.5
+        VERSION 9.0
         DESCRIPTION "Some functions to input things like ints and doubles and strings with error checking"
         LANGUAGES C)
 
