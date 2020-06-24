@@ -10,16 +10,30 @@
 
 #if (_POSIX_C_SOURCE < 200809L && !_GNU_SOURCE)
 size_t getline(char **restrict lineptr, size_t *restrict n, FILE *restrict stream);
+
+size_t getdelim(char **restrict lineptr, size_t *restrict n, int delim, FILE *restrict stream);
 #endif
+
+short fgetshrt(FILE *stream);
+
+unsigned short fgetushrt(FILE *stream);
 
 int fgeti(FILE *stream);
 
-long fgetl(FILE *stream);
-
 unsigned int fgetu(FILE *stream);
 
-unsigned long long int fgetull(FILE *stream);
+long fgetl(FILE *stream);
+
+unsigned long fgetul(FILE *stream);
+
+long long fgetll(FILE *stream);
+
+unsigned long long fgetull(FILE *stream);
+
+float fgetf(FILE *stream);
 
 double fgetd(FILE *stream);
+
+long double fgetld(FILE *stream);
 
 #endif //C_INPUTLIB_INPUTLIB_H

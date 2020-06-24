@@ -8,8 +8,3 @@ set(CMAKE_C_STANDARD 11)
 
 add_library(inputlib STATIC src/inputlib.c)
 target_include_directories(inputlib PUBLIC include)
-
-# TODO
-# figure out CMAKE_C_STANDARD, don't set it if the project including this project has it set
-# improve the getline() function, use fgets() instead of getting one character at a time
-# add functions for more built-in types
